@@ -2,12 +2,14 @@
 	import FIRECalculator from './FIRECalculator.svelte';
 	import CompoundInterestCalculator from './CompoundInterestCalculator.svelte';
 	import WithdrawalCalculator from './WithdrawalCalculator.svelte';
+	import DividendCalculator from './DividendCalculator.svelte';
 	
 	let activeTab = $state('fire');
 	
 	const tabs = [
 		{ id: 'fire', label: 'FIRE Calculator', icon: '🔥' },
 		{ id: 'compound', label: 'Compound Interest', icon: '📈' },
+		{ id: 'dividend', label: 'Dividend Calculator', icon: '💰' },
 		{ id: 'withdrawal', label: 'Safe Withdrawal', icon: '💸' },
 	];
 </script>
@@ -33,6 +35,8 @@
 		<FIRECalculator />
 	{:else if activeTab === 'compound'}
 		<CompoundInterestCalculator />
+	{:else if activeTab === 'dividend'}
+		<DividendCalculator />
 	{:else if activeTab === 'withdrawal'}
 		<WithdrawalCalculator />
 	{/if}
