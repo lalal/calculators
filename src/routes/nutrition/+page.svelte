@@ -8,6 +8,10 @@
 		calculateHeartRate,
 		calculateBodyType,
 		calculateAllIdealWeights,
+		calculateHatchCycle,
+		generateHatchCSV,
+		downloadHatchCSV,
+		generateGoogleSheetsUrl,
 		lbsToKg,
 		feetInchesToCm,
 		getDietTypes,
@@ -73,6 +77,11 @@
 	// Ideal Weight Calculator State
 	let frameSize: 'small' | 'medium' | 'large' = $state('medium');
 
+	// Hatch Squat Calculator State
+	let backSquatMax = $state(315);
+	let frontSquatMax = $state(225);
+	let hatchUseKg = $state(false);
+
 	// Computed values
 	let currentWeightKg = $derived(useMetric ? weight : lbsToKg(weightLbs));
 	let currentHeightCm = $derived(useMetric ? height : feetInchesToCm(heightFeet, heightInches));
@@ -134,6 +143,17 @@
 		return null;
 	});
 
+	let hatchSquatResult = $derived(() => {
+		if (backSquatMax > 0 && frontSquatMax > 0) {
+			return calculateHatchCycle({
+				backSquatMax,
+				frontSquatMax,
+				useKg: hatchUseKg
+			});
+		}
+		return null;
+	});
+
 	function formatNumber(value: number): string {
 		return new Intl.NumberFormat('en-US').format(Math.round(value));
 	}
@@ -149,7 +169,8 @@
 	<div class="flex flex-wrap gap-2 border-b border-gray-200 mb-6 overflow-x-auto">
 		{#each [
 			['tdee', 'Calories'], ['bmi', 'BMI'], ['protein', 'Protein'], ['macros', 'Macros'],
-			['bodyFat', 'Body Fat'], ['heartRate', 'Heart Rate'], ['bodyType', 'Body Type'], ['idealWeight', 'Ideal Weight']
+			['bodyFat', 'Body Fat'], ['heartRate', 'Heart Rate'], ['bodyType', 'Body Type'], ['idealWeight', 'Ideal Weight'],
+			['hatchSquat', 'Hatch Squat']
 		] as [tab, label]}
 			<button 
 				class="px-4 py-2 font-medium transition-colors whitespace-nowrap {activeTab === tab ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}"
@@ -759,7 +780,7 @@
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 			<div class="card">
 				<h2 class="text-xl font-semibold text-gray-900 mb-6">⚖️ Ideal Weight Calculator</h2>
-				<p class="text-sm text-gray-500 mb-6">Calculate ideal weight using multiple formulas.</p>
+				<p class="text-sm text-grayअ500 mb-6">Calculate ideal weight using multiple formulas.</p>
 				
 				<div class="space-y-4">
 					<div class="grid grid-cols-2 gap-4">
@@ -823,6 +844,113 @@
 									<span class="font-medium">
 										{formula.range ? `${formula.range.min} - ${formula.range.max}` : formula.weight} kg
 									</span>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
+			</div>
+		</div>
+	{/if}
+
+	<!-- Hatch Squat Calculator -->
+	{#if activeTab === 'hatchSquat'}
+		<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+			<div class="card">
+				<h2 class="text-xl font-semibold text-gray-900 mb-6">🏋️ Hatch Squat Calculator</h2>
+				<p class="text-sm text-gray-500 mb-6">12-week progressive squat program by Coach Gayle Hatch. Enter your 1RM to generate a complete training cycle.</p>
+				
+				<div class="space-y-4">
+					<div class="flex items-center gap-4 mb-4">
+						<label class="text-sm font-medium text-gray-700">Unit System:</label>
+						<button 
+							class="px-3 py-1 rounded text-sm font-medium {hatchUseKg ? 'bg-gray-200 text-gray-600' : 'bg-blue-600 text-white'}"
+							onclick={() => hatchUseKg = false}
+						>
+							lbs
+						</button>
+						<button 
+							class="px-3 py-1 rounded text-sm font-medium {hatchUseKg ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}"
+							onclick={() => hatchUseKg = true}
+						>
+							kg
+						</button>
+					</div>
+
+					<div class="grid grid-cols-2 gap-4">
+						<div>
+							<label class="block text-sm font-medium text-gray-700 mb-1">Back Squat 1RM ({hatchUseKg ? 'kg' : 'lbs'})</label>
+							<input type="number" bind:value={backSquatMax} class="input-field" min="1" step="2.5" />
+						</div>
+						<div>
+							<label class="block text-sm font-medium text-gray-700 mb-1">Front Squat 1RM ({hatchUseKg ? 'kg' : 'lbs'})</label>
+							<input type="number" bind:value={frontSquatMax} class="input-field" min="1" step="2.5" />
+						</div>
+					</div>
+
+					<p class="text-xs text-gray-500 mt-2">
+						💡 Front squat 1RM is typically 70-85% of back squat 1RM
+					</p>
+				</div>
+			</div>
+			
+			<div class="space-y-6">
+				{#if hatchSquatResult()}
+					{@const result = hatchSquatResult()}
+					<div class="card bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-100">
+						<h3 class="text-lg font-semibold text-gray-900 mb-4">12-Week Program</h3>
+						
+						<div class="grid grid-cols-2 gap-4 mb-4">
+							<div class="text-center p-3 bg-white rounded-lg shadow-sm">
+								<p class="text-sm text-gray-500">Starting Back Squat</p>
+								<p class="text-2xl font-bold text-indigo-600">{result.startingMaxes.backSquat} {result.startingMaxes.unit}</p>
+							</div>
+							<div class="text-center p-3 bg-white rounded-lg shadow-sm">
+								<p class="text-sm text-gray-500">Projected (+3%)</p>
+								<p class="text-2xl font-bold text-green-600">{result.projectedMaxes.backSquat} {result.projectedMaxes.unit}</p>
+							</div>
+						</div>
+
+						<div class="flex gap-2 mb-4">
+							<button 
+								class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
+								onclick={() => downloadHatchCSV(result)}
+							>
+								📥 Download CSV
+							</button>
+							<a 
+								href={generateGoogleSheetsUrl(result)}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium text-center"
+							>
+								📊 Google Sheets
+							</a>
+						</div>
+
+						<p class="text-xs text-gray-500 mb-4">
+							📋 Download the CSV to track your progress or create a Google Sheet to log your workouts.
+						</p>
+
+						<div class="space-y-3 max-h-96 overflow-y-auto">
+							<p class="text-sm font-medium text-gray-700 sticky top-0 bg-indigo-50 py-1">Weekly Breakdown:</p>
+							{#each result.weeks as session}
+								<div class="p-3 bg-white rounded-lg border text-sm">
+									<div class="font-medium text-gray-900 mb-2">Week {session.week} - Session {session.session}</div>
+									<div class="space-y-1">
+										<p class="text-gray-600 font-medium">Back Squat:</p>
+										{#each session.backSquat as set}
+											<p class="text-xs text-gray-500 pl-2">
+												{set.sets}x{set.reps} @ {(set.percentage * 100).toFixed(0)}% ({(set.weight ?? 0).toFixed(1)} {result.startingMaxes.unit})
+											</p>
+										{/each}
+										<p class="text-gray-600 font-medium mt-2">Front Squat:</p>
+										{#each session.frontSquat as set}
+											<p class="text-xs text-gray-500 pl-2">
+												{set.sets}x{set.reps} @ {(set.percentage * 100).toFixed(0)}% ({(set.weight ?? 0).toFixed(1)} {result.startingMaxes.unit})
+											</p>
+										{/each}
+									</div>
 								</div>
 							{/each}
 						</div>

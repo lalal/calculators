@@ -20,3 +20,15 @@ export {
 	type DividendCalculatorInputs,
 	type DividendCalculatorResult
 } from './dividendCalculator';
+export {
+	fetchStockData,
+	calculatePeterLynchFairValue,
+	calculateDCFFairValue,
+	calculateFairValue,
+	formatLargeNumber,
+	type StockData,
+	type PeterLynchResult,
+	type DCFResult,
+	type FairValueInputs,
+	type FairValueResult
+} from './stockFairValue';

@@ -8,32 +8,10 @@
  * - So ~8 stock lookups per day
  */
 
+import { alphaVantageThrottler } from '$lib/utils/apiThrottler';
+
 const ALPHA_VANTAGE_BASE_URL = 'https://www.alphavantage.co/query';
 const API_KEY = 'CXDUOAKFB6HBVKX7';
-
-/**
- * Simple throttler to ensure minimum delay between API calls
- * Alpha Vantage has a limit of 5 calls per minute, so we use 12 seconds
- * to be safe (60/5 = 12, but we'll use 2 seconds as requested for better UX)
- */
-const MIN_DELAY_MS = 2000; // 2 seconds between calls
-let lastApiCallTime = 0;
-
-/**
- * Throttle function that ensures minimum delay between API calls
- */
-async function throttleApiCall(): Promise<void> {
-	const now = Date.now();
-	const timeSinceLastCall = now - lastApiCallTime;
-	
-	if (timeSinceLastCall < MIN_DELAY_MS) {
-		const waitTime = MIN_DELAY_MS - timeSinceLastCall;
-		console.log(`⏳ [Alpha Vantage] Throttling: waiting ${waitTime}ms before next API call...`);
-		await new Promise(resolve => setTimeout(resolve, waitTime));
-	}
-	
-	lastApiCallTime = Date.now();
-}
 
 export type DividendFrequency = 'monthly' | 'quarterly' | 'semi-annual' | 'annual' | 'unknown';
 
@@ -324,7 +302,7 @@ export function calculateGrowthRate(dividends: DividendData[]): number {
  * Fetch dividend history from Alpha Vantage API
  */
 export async function fetchDividendHistory(symbol: string): Promise<AlphaVantageDividendResponse> {
-	await throttleApiCall();
+	await alphaVantageThrottler.throttle();
 	
 	const url = `${ALPHA_VANTAGE_BASE_URL}?function=DIVIDENDS&symbol=${encodeURIComponent(symbol)}&apikey=${API_KEY}`;
 	
@@ -373,7 +351,7 @@ export async function fetchDividendHistory(symbol: string): Promise<AlphaVantage
  * Fetch current stock price from Alpha Vantage API
  */
 export async function fetchStockQuote(symbol: string): Promise<AlphaVantageQuoteResponse> {
-	await throttleApiCall();
+	await alphaVantageThrottler.throttle();
 	
 	const url = `${ALPHA_VANTAGE_BASE_URL}?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbol)}&apikey=${API_KEY}`;
 	
@@ -422,7 +400,7 @@ export async function fetchStockQuote(symbol: string): Promise<AlphaVantageQuote
  * Fetch company overview from Alpha Vantage API for company name
  */
 export async function fetchCompanyOverview(symbol: string): Promise<AlphaVantageOverviewResponse> {
-	await throttleApiCall();
+	await alphaVantageThrottler.throttle();
 	
 	const url = `${ALPHA_VANTAGE_BASE_URL}?function=OVERVIEW&symbol=${encodeURIComponent(symbol)}&apikey=${API_KEY}`;
 	

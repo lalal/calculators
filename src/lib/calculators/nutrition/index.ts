@@ -120,3 +120,18 @@ export {
 	type AllIdealWeightsResult,
 	type WeightFormula
 } from './idealWeight';
+
+// Hatch Squat Cycle Calculator
+export {
+	calculateHatchCycle,
+	formatWeight as formatHatchWeight,
+	generateCSV as generateHatchCSV,
+	generateGoogleSheetsUrl,
+	downloadCSV as downloadHatchCSV,
+	lbsToKg as hatchLbsToKg,
+	kgToLbs as hatchKgToLbs,
+	type HatchSquatInputs,
+	type SetScheme,
+	type WeeklySession,
+	type HatchSquatResult
+} from './hatchSquat';
